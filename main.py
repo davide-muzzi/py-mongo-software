@@ -108,7 +108,7 @@ def nearest_restaurant(db_name, col_name, target_name="Le Perigord"):
         if not coords:
             continue
 
-        # Simple Euclidean distance (not accurate for Earth, but fine for this project)
+        # Simple Euclidean distance (not accurate for Earth)
         distance = sqrt(
             (coords[0] - target_coords[0]) ** 2 +
             (coords[1] - target_coords[1]) ** 2
@@ -126,8 +126,25 @@ def nearest_restaurant(db_name, col_name, target_name="Le Perigord"):
     else:
         print("No nearby restaurant found.")
 
+def search_restaurants(db_name, col_name, name_search="", cuisine_search=""):
+    collection = client[db_name][col_name]
+    query = {}
 
+    if name_search:
+        query["name"] = {"$regex": name_search, "$options": "i"}
 
+    if cuisine_search:
+        query["cuisine"] = {"$regex": cuisine_search, "$options": "i"}
+
+    results = list(collection.find(query))
+
+    if not results:
+        print("No matching restaurants found.")
+        return
+
+    print("\nMatching Restaurants:")
+    for r in results:
+        print(f"Name: {r.get('name')}, Cuisine: {r.get('cuisine')}, Borough: {r.get('borough')}")
 
 
 # ----- Main App Flow -----
@@ -159,6 +176,11 @@ while True:
     wait_for_any_key()
 
     nearest_restaurant(db_input, col_input)
+    wait_for_any_key()
+
+    name_input = input("\nSearch by Name (or leave blank): ")
+    cuisine_input = input("Search by Cuisine (or leave blank): ")
+    search_restaurants(db_input, col_input, name_input, cuisine_input)
     wait_for_any_key()
 
     docs = list_documents(db_input, col_input)
