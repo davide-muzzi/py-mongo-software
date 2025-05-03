@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import os
 from pymongo import MongoClient
 import msvcrt
+from math import sqrt
 
 # Load Mongo URI from .env
 load_dotenv()
@@ -87,6 +88,47 @@ def top_3_restaurants(db_name, col_name):
     for r in results:
         print(f"{r['_id']} - Average Score: {r['averageScore']:.2f}")
 
+def nearest_restaurant(db_name, col_name, target_name="Le Perigord"):
+    collection = client[db_name][col_name]
+
+    # Step 1: Find Le Perigord's coordinates
+    le_perigord = collection.find_one({"name": target_name})
+    if not le_perigord or "address" not in le_perigord or "coord" not in le_perigord["address"]:
+        print(f"'{target_name}' not found or missing coordinates.")
+        return
+
+    target_coords = le_perigord["address"]["coord"]
+
+    nearest = None
+    nearest_distance = float('inf')
+
+    # Step 2: Loop through all other restaurants and compare distances
+    for restaurant in collection.find({"name": {"$ne": target_name}}):
+        coords = restaurant.get("address", {}).get("coord")
+        if not coords:
+            continue
+
+        # Simple Euclidean distance (not accurate for Earth, but fine for this project)
+        distance = sqrt(
+            (coords[0] - target_coords[0]) ** 2 +
+            (coords[1] - target_coords[1]) ** 2
+        )
+
+        if distance < nearest_distance:
+            nearest_distance = distance
+            nearest = restaurant
+
+    if nearest:
+        print("\nNearest Restaurant to 'Le Perigord':")
+        print(f"Name: {nearest['name']}")
+        print(f"Address: {nearest.get('address')}")
+        print(f"Cuisine: {nearest.get('cuisine')}")
+    else:
+        print("No nearby restaurant found.")
+
+
+
+
 
 # ----- Main App Flow -----
 while True:
@@ -114,6 +156,9 @@ while True:
     wait_for_any_key()
 
     top_3_restaurants(db_input, col_input)
+    wait_for_any_key()
+
+    nearest_restaurant(db_input, col_input)
     wait_for_any_key()
 
     docs = list_documents(db_input, col_input)
