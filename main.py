@@ -68,6 +68,25 @@ def list_boroughs(db_name, col_name):
     for b in boroughs:
         print(f" - {b}")
 
+def top_3_restaurants(db_name, col_name):
+    collection = client[db_name][col_name]
+    pipeline = [
+        {"$unwind": "$grades"},
+        {"$group": {
+            "_id": "$name",
+            "averageScore": {"$avg": "$grades.score"}
+        }},
+        {"$sort": {"averageScore": -1}},
+        {"$limit": 3}
+    ]
+    results = list(collection.aggregate(pipeline))
+    if not results:
+        print("No restaurants found.")
+        return
+    print("\nTop 3 Restaurants by Average Score:")
+    for r in results:
+        print(f"{r['_id']} - Average Score: {r['averageScore']:.2f}")
+
 
 # ----- Main App Flow -----
 while True:
@@ -92,6 +111,9 @@ while True:
         continue
     
     list_boroughs(db_input, col_input)
+    wait_for_any_key()
+
+    top_3_restaurants(db_input, col_input)
     wait_for_any_key()
 
     docs = list_documents(db_input, col_input)
