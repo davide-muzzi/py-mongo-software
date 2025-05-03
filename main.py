@@ -58,6 +58,17 @@ def show_document(db_name, col_name, doc_id):
         print("Invalid ID format")
     wait_for_any_key()
 
+def list_boroughs(db_name, col_name):
+    collection = client[db_name][col_name]
+    boroughs = collection.distinct("borough")
+    if not boroughs:
+        print("No boroughs found.")
+        return
+    print("\nBoroughs:")
+    for b in boroughs:
+        print(f" - {b}")
+
+
 # ----- Main App Flow -----
 while True:
     dbs = list_databases()
@@ -79,6 +90,9 @@ while True:
     if col_input not in collections:
         print("Invalid collection. Try again.")
         continue
+    
+    list_boroughs(db_input, col_input)
+    wait_for_any_key()
 
     docs = list_documents(db_input, col_input)
     if not docs:
